@@ -71,7 +71,7 @@ def stage2(track_files, int_model, logh=sys.stderr):
     
     return gtfs, mlens
 
-def stage3(igtfs, cdict, shortdist=10, longdist=10000, logh=sys.stderr):
+def stage3(igtfs, cdict, shortdist, longdist, logh=sys.stderr):
     ''' Stage 3: Merge internal annotations '''
     print >>logh, '*** Stage 3: Merging internal annotations'        
     print >>logh, '\tFound %d internal annotations' % len(igtfs)        
@@ -92,7 +92,7 @@ def stage3(igtfs, cdict, shortdist=10, longdist=10000, logh=sys.stderr):
             return right.members[0].attr['repStart'] < left.members[-1].attr['repStart']
 
     print >>logh, '\tMerging annotations < %d bp apart that have consecutive models' % (longdist)    
-    iclusters = cluster_gtf(iclusters, dist=10000, criteria=consecutive_rmsk_model)
+    iclusters = cluster_gtf(iclusters, dist=longdist, criteria=consecutive_rmsk_model)
     print >>logh, '\t%d merged annotations after second merge' % len(iclusters)
     
     # Sort clusters and add attributes for locus and internal model
@@ -322,7 +322,10 @@ def main(args):
                 write_gtf_file(sort_gtf(gtf, cdict.reforder), outh)
 
     ''' Stage 3: Merge internal annotations '''
-    iclusters = stage3(list(chain.from_iterable(gtfs[im] for im in int_model)), cdict)
+    igtfs = list(chain.from_iterable(gtfs[im] for im in int_model))
+    iclusters = stage3(igtfs, cdict,
+                       shortdist=args.short_dist,
+                       longdist=args.long_dist)
 
     # Remove records that are not in the chromosome list
     if cdict.reforder is not None:
@@ -494,9 +497,23 @@ def console():
     group3.add_argument('--min_model_pct', type=float, default=0.1,
                         help='''Minimum percentage of internal model covered by
                                 locus. Loci that do not meet this criteria are
-                                rejected.''')
+                                rejected. Default: 0.1.''')
     group3.add_argument('--flank_size', type=int,
-                        help='''Flanking distance to search for LTRs.''')
+                        help='''Flanking distance to search for LTRs.
+                                Default: length of longest LTR model, rounded
+                                to nearest 100.''')
+    group3.add_argument('--short_dist', type=int, default=10,
+                        help='''Automatically merge internal annotations less
+                                than short_dist apart. In this case, we assume
+                                that the two annotations are part of the same
+                                locus but were created as two annotations
+                                because of failed extension. Default: 10.''')
+    group3.add_argument('--long_dist', type=int, default=2500,
+                        help='''Merge internal annotations less than long_dist
+                                apart if the model alignment positions agree.
+                                In this case, we assume that a single locus was
+                                split due to an insertion, often by another
+                                retroelement. Default: 2500.''')
 
     parser.add_argument('fam',
                         help="Name for family")

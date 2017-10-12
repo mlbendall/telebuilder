@@ -27,6 +27,7 @@ class GTFLine(object):
         if val is None:
             for (n, t, d) in self.COLS:
                 setattr(self, n, d)
+            self.attr = {}
         elif type(val) is list:
             for (n, t, d), v in zip(self.COLS, val):
                 setattr(self, n, t(v))

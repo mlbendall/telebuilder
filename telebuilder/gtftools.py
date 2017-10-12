@@ -32,7 +32,8 @@ def console():
     parser_sort = subparsers.add_parser('sort', help='Sort GTF file.')
 
     parser_sort.add_argument('--chrom_sizes', default='chrom.sizes',
-                        help='File with chromosome sizes and order.')
+                        help='''File with chromosome sizes and order. Default
+                                is "chrom.sizes" (in working directory).''')
     parser_sort.add_argument('infile',
                              nargs='?', type=argparse.FileType('rU'),
                              default=sys.stdin,

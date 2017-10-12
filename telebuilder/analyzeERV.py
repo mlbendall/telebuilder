@@ -36,7 +36,7 @@ def flanking_ltr_distribution(args, ltr_files):
         iclusters.append(newclust)
 
     locids = [c.attr['locus'] for c in iclusters]
-    print >> sys.stderr, "[VERBOSE] Loaded %d clusters" % len(locids)
+    print >> sys.stderr, "[VERBOSE] Loaded %d internal clusters" % len(locids)
 
     # Create flanking annotations
     flanks = []
@@ -135,7 +135,7 @@ def download_ltr(args):
     # Genome Build
     if args.genome_build is None:
         sys.exit("ERROR: --genome_build is required.")
-    print >>sys.stderr, "[VERBOSE] Genome build: %s" % args.genome_build
+    # print >>sys.stderr, "[VERBOSE] Genome build: %s" % args.genome_build
 
     # Load chromosome sizes
     if os.path.exists(args.chrom_sizes):
@@ -157,10 +157,10 @@ def download_ltr(args):
     LTRQUERY = '''SELECT * FROM rmsk WHERE genoName = '%s' AND repClass = 'LTR' AND repName NOT REGEXP '-[Ii](nt)?$';'''
     rmskfiles = []
     for chrom in chroms:
-        print >> sys.stderr, "[VERBOSE] Chromosome: %s" % chrom
+        # print >> sys.stderr, "[VERBOSE] Chromosome: %s" % chrom
         rmskfile = os.path.join(dest, '%s.ltr.txt.gz' % chrom)
         if os.path.exists(rmskfile) and not args.overwrite:
-            print >> sys.stderr, "[VERBOSE] Found existing: %s" % rmskfile
+            # print >> sys.stderr, "[VERBOSE] Found existing: %s" % rmskfile
             rmskfiles.append(rmskfile)
         else:
             response = rmskutils.ucsc_download(args.genome_build, LTRQUERY % chrom)
@@ -177,7 +177,7 @@ def download_ltr(args):
     for rf in rmskfiles:
         gf = '%s.gtf.gz' % '.'.join(rf.split('.')[:-2])
         if os.path.exists(gf) and not args.overwrite:
-            print >> sys.stderr, "[VERBOSE] Found existing: %s" % gf
+            # print >> sys.stderr, "[VERBOSE] Found existing: %s" % gf
             gtffiles.append(gf)
         else:
             rows = tsv(gzip.open(rf, 'rb'))
