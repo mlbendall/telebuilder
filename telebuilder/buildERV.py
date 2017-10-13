@@ -117,7 +117,7 @@ def stage4(iclusters, ltr_gtfs, flanksize, cdict, logh=sys.stderr):
     # Create annotations combining internal and LTR
     mclusters = []
     iclust_d = {g.attr['locus']:g for g in iclusters} # Quickly retrieve cluster by locus ID
-    for islop, flanks in isect.iteritems():
+    for islop, flanks in isect:
         # Retrieve icluster with locus matching islop
         g = iclust_d.pop(islop.attr['locus'])
         for lidx, h in flanks:
@@ -127,7 +127,8 @@ def stage4(iclusters, ltr_gtfs, flanksize, cdict, logh=sys.stderr):
     print >>logh, '\t%d merged clusters' % len(mclusters)
     print >>logh, '\t%d unmerged internal clusters' % len(iclust_d.values())
     
-    return sort_gtf(mclusters + iclust_d.values(), cdict.reforder)
+    # return sort_gtf(mclusters + iclust_d.values(), cdict.reforder)
+    return sort_gtf(mclusters, cdict.reforder)
 
 
 def stage5(mclusters, mlens, logh=sys.stderr):
@@ -207,13 +208,12 @@ def stage8(mclusters, cytogtf, fam, logh=sys.stderr):
             g.set_attr('transcript_id', g.attr['locus'])
             g.set_attr('gene_id', g.attr['locus'])
     else:
-        # Intersect clusters with cytoband
-        isect = intersect_gtf(mclusters, [cytogtf,], stranded=False)
+        isect = intersect_gtf(mclusters, [cytogtf, ], stranded=False)
         byband = defaultdict(list)
-        for g in mclusters:
+        for g, bands in isect:
             chrom = g.chrom[3:] if g.chrom[:3] == 'chr' else g.chrom
-            if g in isect:
-                band = isect[g][0][1].attr['gene_id']
+            if bands:
+                band = bands[0][1].attr['gene_id']
             else:
                 band = ''
             byband[(chrom, band)].append(g)

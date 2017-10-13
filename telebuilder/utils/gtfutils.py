@@ -136,23 +136,22 @@ def cluster_gtf(gtf, dist=0, stranded=True, criteria=None):
     return ret
 
 
+def _chromstrand(g, stranded):
+    return '{}#{}'.format(g.chrom, g.strand) if stranded else g.chrom
+
 def intersect_gtf(gtfA, gtfBs, stranded=True):
     bychrom = defaultdict(IntervalTree)
-    isect = defaultdict(list)
-    for g in gtfA:
-        if stranded:
-            bychrom['%s#%s' % (g.chrom, g.strand)].addi(g.start, g.end, g)
-        else:
-            bychrom[g.chrom].addi(g.start, g.end, g)
-    
     for i,gtfB in enumerate(gtfBs):
         for h in gtfB:
-            cchrom = '%s#%s' % (h.chrom, h.strand) if stranded else h.chrom
-            if cchrom in bychrom:
-                for iv in bychrom[cchrom].search(h.start, h.end):
-                    isect[iv.data].append((i,h))
-    
-    return isect
+            bychrom[_chromstrand(h, stranded)].addi(h.start, h.end, (i, h))
+    for g in gtfA:
+        cchrom = _chromstrand(g, stranded)
+        if cchrom in bychrom:
+            m = [iv.data for iv in bychrom[cchrom].search(g.start, g.end)]
+        else:
+            m = []
+        yield (g, m)
+
 
 def conflict_gtf(gtf, dist=0, stranded=False):
     bychrom = defaultdict(list)

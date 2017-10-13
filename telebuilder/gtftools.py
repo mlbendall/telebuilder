@@ -7,7 +7,7 @@ import os
 from utils.omicutils import ChromosomeDict
 # from utils.gtfutils import cluster_gtf, slop_gtf, intersect_gtf, conflict_gtf
 from utils.gtfutils import sort_gtf
-from utils.gtfutils import read_gtf_file, write_gtf_file
+from utils.gtfutils import read_gtf_file, write_gtf_file, read_gtf_clusters
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
@@ -22,6 +22,15 @@ def gtftools_sort(args):
     giter = sort_gtf(read_gtf_file(args.infile), cdict.reforder)
     write_gtf_file(giter, args.outfile)
 
+def gtftools_sortclust(args):
+    # Load chromosome sizes
+    if args.chrom_sizes and os.path.exists(args.chrom_sizes):
+        cdict = ChromosomeDict(args.chrom_sizes)
+    else:
+        cdict = ChromosomeDict()
+
+    giter = sort_gtf(read_gtf_clusters(args.infile), cdict.reforder)
+    write_gtf_file(giter, args.outfile)
 
 def console():
     import argparse
@@ -29,8 +38,10 @@ def console():
         description='''GTF tools'''
     )
     subparsers = parser.add_subparsers()
-    parser_sort = subparsers.add_parser('sort', help='Sort GTF file.')
 
+    ''' sort '''
+    parser_sort = subparsers.add_parser('sort',
+                                        help='Sort GTF file.')
     parser_sort.add_argument('--chrom_sizes', default='chrom.sizes',
                         help='''File with chromosome sizes and order. Default
                                 is "chrom.sizes" (in working directory).''')
@@ -44,6 +55,22 @@ def console():
                              help="Output GTF file. Default: stdout.")
     parser_sort.set_defaults(func=gtftools_sort)
 
+    ''' sortclust '''
+    parser_sortclust = subparsers.add_parser('sortclust',
+                                             help='Sort clustered GTF file.')
+    parser_sortclust.add_argument('--chrom_sizes', default='chrom.sizes',
+                        help='''File with chromosome sizes and order. Default
+                                is "chrom.sizes" (in working directory).''')
+    parser_sortclust.add_argument('infile',
+                             nargs='?', type=argparse.FileType('rU'),
+                             default=sys.stdin,
+                             help="Input GTF file. Default: stdin.")
+    parser_sortclust.add_argument('outfile',
+                             nargs='?', type=argparse.FileType('w'),
+                             default=sys.stdout,
+                             help="Output GTF file. Default: stdout.")
+    parser_sortclust.set_defaults(func=gtftools_sortclust)
+    
     try:
         args = parser.parse_args()
         args.func(args)
