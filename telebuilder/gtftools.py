@@ -6,7 +6,7 @@ import os
 
 from utils.omicutils import ChromosomeDict
 # from utils.gtfutils import cluster_gtf, slop_gtf, intersect_gtf, conflict_gtf
-from utils.gtfutils import sort_gtf
+from utils.gtfutils import sort_gtf, intersect_gtf
 from utils.gtfutils import read_gtf_file, write_gtf_file, read_gtf_clusters
 
 __author__ = 'Matthew L. Bendall'
@@ -31,6 +31,20 @@ def gtftools_sortclust(args):
 
     giter = sort_gtf(read_gtf_clusters(args.infile), cdict.reforder)
     write_gtf_file(giter, args.outfile)
+
+def gtftools_intersect(args):
+    gtfA = read_gtf_file(args.a)
+    gtfBs = [read_gtf_file(bname) for bname in args.b]
+    for gA, gBs in intersect_gtf(gtfA, gtfBs):
+        if not gBs:
+            if args.v or args.all:
+                l = "{}\t{}\t{}".format(gA, ".", ("\t"*9))
+                print >>sys.stdout, l
+        else:
+            for i,gB in gBs:
+                if not args.v:
+                    l = "{}\t{}\t{}".format(gA, i, gB)
+                    print >> sys.stdout, l
 
 def console():
     import argparse
@@ -70,7 +84,27 @@ def console():
                              default=sys.stdout,
                              help="Output GTF file. Default: stdout.")
     parser_sortclust.set_defaults(func=gtftools_sortclust)
-    
+
+    ''' intersect '''
+    parser_intersect = subparsers.add_parser('intersect',
+                                             help='Intersect GTF files.')
+    parser_intersect.add_argument('-v', action='store_true',
+                                  help='''Only report entries in A that have no
+                                          overlap with B. (Default is to report
+                                          only entries in A that have
+                                          overlap).''')
+    parser_intersect.add_argument('--all', action='store_true',
+                                  help='''Report all entries in A whether or
+                                          not there is overlap with B. (Default
+                                          is to report only entries in A that
+                                          have overlap).''')
+    parser_intersect.add_argument('-a',
+                                  help='''GTF A.''')
+    parser_intersect.add_argument('-b', action='append',
+                                  help='''GTF B. Can be specified multiple
+                                          times''')
+    parser_intersect.set_defaults(func=gtftools_intersect)
+
     try:
         args = parser.parse_args()
         args.func(args)
