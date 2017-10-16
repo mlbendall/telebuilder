@@ -4,6 +4,7 @@
 import os
 import sys
 import gzip
+from glob import glob
 
 from utils.utils import tsv
 from utils.omicutils import ChromosomeDict
@@ -64,7 +65,7 @@ def flanking_ltr_distribution(args, ltr_files):
     isect = gtfutils.intersect_gtf(flanks, gtfBs)
     # Summarize hits
     hits = defaultdict(lambda: {'left': set(), 'right': set()})
-    for k, vlist in isect.iteritems():
+    for k, vlist in isect:
         for lidx, h in vlist:
             hits[k.attr['locus']][k.attr['side']].add(h.attr['repName'])
 
@@ -220,6 +221,8 @@ def console():
                         help='Directory containing LTR annotations, one file per chromosome.')
     parser.add_argument('--overwrite', action='store_true',
                         help='Overwrite downloaded LTR annotations.')
+    parser.add_argument('--download', action='store_true',
+                        help='Download the LTR annotations.')
     parser.add_argument('--filter_chrom',
                         help='''A comma-separated list of chromosomes to include. Default
                                 is to examine all chromosomes.''')
@@ -227,7 +230,11 @@ def console():
                         help="GTF file with internal annotations. Clustering is recommended.")
 
     args = parser.parse_args()
-    ltrfiles = download_ltr(args)
+    if args.download:
+        ltrfiles = download_ltr(args)
+    else:
+        ltrfiles = glob(os.path.join(args.ltr_dir, '*.gtf.gz'))
+    
     flanking_ltr_distribution(args, ltrfiles)
 
 
