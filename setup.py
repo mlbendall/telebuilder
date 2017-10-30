@@ -21,6 +21,7 @@ setup(
         'console_scripts': [
             'buildERV=telebuilder.buildERV:console',
             'analyzeERV=telebuilder.analyzeERV:console',
+            'buildL1=telebuilder.buildL1:console',
             'gtftools=telebuilder.gtftools:console',
         ],
     },
