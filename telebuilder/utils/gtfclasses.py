@@ -182,7 +182,7 @@ class GTFCluster(object):
         return GTFLine([
             self.chrom,
             ','.join(sorted(set(h.source for h in self.members))),
-            'span',
+            'gene',
             self.start,
             self.end,
             '.',

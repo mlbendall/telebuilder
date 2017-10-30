@@ -204,7 +204,7 @@ def read_gtf_clusters(infile, group_by=None, comment='#'):
     if group_by is None:
         groups = []
         for g in read_gtf_file(infile, comment):
-            if g.feature == 'span':
+            if g.feature == 'gene':
                 groups.append([g])
             else:
                 groups[-1].append(g)
@@ -217,8 +217,8 @@ def read_gtf_clusters(infile, group_by=None, comment='#'):
     
     clusters = []
     for grp in groups:
-        spn = [g for g in grp if g.feature == 'span']
+        spn = [g for g in grp if g.feature == 'gene']
         spn_attr = spn[0].attr
-        clusters.append(GTFCluster([g for g in grp if g.feature != 'span']))
+        clusters.append(GTFCluster([g for g in grp if g.feature != 'gene']))
         clusters[-1].attr = spn_attr
     return clusters
