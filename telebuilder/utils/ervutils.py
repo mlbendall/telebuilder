@@ -219,13 +219,17 @@ class LocusConflict(object):
             f = [g for g in self.gtf if g.attr['locus'] == loc]
             assert len(f) == 1, 'ERROR: locus %s was found %d times.' % (loc, len(f))
             to_remove.append(f[0])
-        
+
+        to_remove.sort(key=lambda x:x.attr['model_pct'], reverse=True)
         merged = to_remove[0].copy()
         for other in to_remove[1:]:
             for m in other.members:
                 m_copy = m.copy()
                 if 'locus' in m_copy.attr:
                     m_copy.attr['locus'] = merged.attr['locus']
+                if m_copy.strand != merged.strand:
+                    m_copy.attr['prev_strand'] = m_copy.strand
+                    m_copy.strand = merged.strand
                 merged.add(m_copy)
         merged.cleanup()
         return (to_remove, [merged,])
