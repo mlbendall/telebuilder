@@ -197,10 +197,7 @@ def download_ltr(args):
     return gtffiles
 
 
-def _get_build_from_file():
-    if os.path.exists('build.txt'):
-        return open('build.txt', 'rU').read().strip()
-
+from utils import _get_build_from_file
 
 
 def console():
@@ -234,7 +231,7 @@ def console():
         ltrfiles = download_ltr(args)
     else:
         ltrfiles = glob(os.path.join(args.ltr_dir, '*.gtf.gz'))
-    
+
     flanking_ltr_distribution(args, ltrfiles)
 
 

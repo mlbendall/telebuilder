@@ -435,9 +435,7 @@ def main(args):
         print >> sys.stderr, '\t%s%d' % (k.ljust(20), v)
 
 
-def _get_build_from_file():
-    if os.path.exists('build.txt'):
-        return open('build.txt', 'rU').read().strip()
+from utils import _get_build_from_file
 
 
 def console():
