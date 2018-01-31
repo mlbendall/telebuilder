@@ -10,6 +10,7 @@ from itertools import chain
 
 from utils import rmskutils
 from utils import ervutils
+from utils import _get_build_from_file
 
 from utils.utils import tsv, collapse_list, raw_input_stderr
 from utils.gtfutils import cluster_gtf, sort_gtf, slop_gtf, intersect_gtf, conflict_gtf, region_gtf
@@ -434,8 +435,6 @@ def main(args):
     for k, v in ltr_usage['oneside'].most_common():
         print >> sys.stderr, '\t%s%d' % (k.ljust(20), v)
 
-
-from utils import _get_build_from_file
 
 
 def console():

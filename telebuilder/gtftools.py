@@ -3,11 +3,18 @@
 
 import sys
 import os
+import re
+
+from Bio.Seq import Seq
 
 from utils.omicutils import ChromosomeDict
+from utils.omicutils import get_sequence_ucsc
 # from utils.gtfutils import cluster_gtf, slop_gtf, intersect_gtf, conflict_gtf
+from utils import _get_build_from_file
+from utils.utils import wraplines
 from utils.gtfutils import sort_gtf, intersect_gtf
 from utils.gtfutils import read_gtf_file, write_gtf_file, read_gtf_clusters
+from utils.gtfclasses import GTFLine, GTFCluster
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
@@ -45,6 +52,113 @@ def gtftools_intersect(args):
                 if not args.v:
                     l = "{}\t{}\t{}".format(gA, i, gB)
                     print >> sys.stdout, l
+
+def gtftools_tsv(args):
+    gtfA = [g for g in read_gtf_file(args.infile) if g.feature == args.feat]
+    all_attrs = set()
+    for gA in gtfA:
+        all_attrs |= set(gA.attr.keys())
+
+    cols = [args.key, 'chrom', 'start', 'end', 'strand', 'score', ]
+    all_attrs = [a for a in sorted(all_attrs) if a != args.key]
+    print >>sys.stdout, '\t'.join(cols + all_attrs)
+    for i, gA in enumerate(gtfA):
+        r = [
+            gA.attr[args.key] if args.key in gA.attr else 'LOC%06d' % (i+1),
+            gA.chrom,
+            str(gA.start),
+            str(gA.end),
+            gA.strand,
+            gA.score if gA.score != -1 else '',
+        ]
+        for a in all_attrs:
+            r.append(gA.attr[a] if a in gA.attr else '')
+        print >> sys.stdout, '\t'.join(map(str, r))
+
+from Bio.Seq import Seq
+
+def gtftools_extract(args):
+    if args.gtfout:
+        outgtf = open(args.gtfout, 'w')
+
+    clusters = read_gtf_clusters(args.infile)
+    for gc in clusters:
+        reg = (gc.chrom, gc.start, gc.end)
+
+        # Adjust annotations to locus coordinates
+        adjusted = GTFCluster()
+        adjusted.attr = dict(gc.attr)
+        adjusted.attr['reg'] = '%s:%d-%d(%s)' % (gc.chrom, gc.start, gc.end, gc.strand)
+        for g in gc.members:
+            h = g.copy()
+            h.attr['reg'] = '%s:%d-%d(%s)' % (g.chrom, g.start, g.end, g.strand)
+            h.chrom = gc.attr['locus']
+            h.start = g.start - gc.start + 1
+            h.end = g.end - gc.start + 1
+            if h.attr['geneRegion'] == 'ltr':
+                h.feature = 'LTR'
+                # h.attr = {'name': h.attr['repName']}
+                del h.attr['transcript_id']
+                del h.attr['gene_id']
+                h.attr['name'] = h.attr['repName']
+            adjusted.add(h)
+
+        rawseq = get_sequence_ucsc(args.genome_build, reg)
+
+        if gc.strand == '-':
+            # Reverse complement the sequence
+            rawseq = str(Seq(rawseq).reverse_complement())
+            # Reverse the annotations
+            rev = GTFCluster()
+            rev.attr = dict(adjusted.attr)
+            for g in adjusted.members:
+                h = g.copy()
+                h.start = adjusted.end - g.end + 1
+                h.end = adjusted.end - g.start + 1
+                h.strand = '+'
+                rev.add(h)
+            adjusted = rev
+
+        # Make regions
+        allexons = rawseq.lower()
+        # selexons = rawseq.lower()
+        for n in adjusted.members:
+            allexons = allexons[0:(n.start-1)] + allexons[(n.start-1):n.end].upper() + allexons[n.end:]
+            # if 'all' in upregions or n.attr['geneRegion'] in upregions:
+            #     selexons = selexons[0:(n.start-1)] + selexons[(n.start-1):n.end].upper() + selexons[n.end:]
+
+        assert len(allexons) == len(rawseq) and allexons.lower() == rawseq
+
+        # Create annotations for introns
+        for m in re.finditer('[a-z]+', allexons):
+            ig = GTFLine([
+                gc.attr['locus'], gc.members[0].source, 'intron',
+                m.start() + 1, m.end(),
+                '.', '+', '.', {'geneRegion':'nohit'}
+            ])
+            # ig.chrom = gc.attr['locus']
+            # ig.start, ig.end = (m.start()+1, m.end())
+            adjusted.add(ig)
+
+        # Create internal annotation
+        internals = [g for g in adjusted.members if g.attr['geneRegion'] == 'internal']
+        misc_g = GTFLine([
+            gc.attr['locus'], gc.members[0].source, 'misc_feature',
+            min(g.start for g in internals), max(g.end for g in internals),
+            '.', '+', '.', {'name':'internal',
+                            'geneRegion': 'internal'},
+        ])
+        adjusted.add(misc_g)
+
+        # Print
+        print >> args.outfile, '>%s' % adjusted.attr['locus']
+        print >> args.outfile, wraplines(allexons)
+        if args.gtfout:
+            print >>outgtf, adjusted
+    #
+    outgtf.close()
+    return
+
 
 def console():
     import argparse
@@ -104,6 +218,61 @@ def console():
                                   help='''GTF B. Can be specified multiple
                                           times''')
     parser_intersect.set_defaults(func=gtftools_intersect)
+
+    ''' tsv '''
+    parser_tsv = subparsers.add_parser('tsv',
+                                        help='GTF to TSV.')
+    parser_tsv.add_argument('--feat', default='gene',
+                            help='''Only include records with feature. Default
+                                    is "gene".''')
+    parser_tsv.add_argument('--key', default='locus',
+                            help='''Key used for record ID. Default is
+                                    "locus".''')
+    parser_tsv.add_argument('infile',
+                             nargs='?', type=argparse.FileType('rU'),
+                             default=sys.stdin,
+                             help="Input GTF file. Default: stdin.")
+    parser_tsv.add_argument('outfile',
+                             nargs='?', type=argparse.FileType('w'),
+                             default=sys.stdout,
+                             help="Output GTF file. Default: stdout.")
+    parser_tsv.set_defaults(func=gtftools_tsv)
+
+    ''' extract '''
+    parser_extract = subparsers.add_parser('extract',
+                                             help='Extract sequences.')
+    parser_extract.add_argument('--genome_build',
+                                default=_get_build_from_file(),
+                                help='''Genome build to use, i.e. hg19, hg38.
+                                        Can be configured by creating a text
+                                        file called "build.txt" with the
+                                        build ID.''')
+    # parser_extract.add_argument('--nohit',
+    #                             default='lowercase',
+    #                             choices=['lowercase', 'gap', 'exclude', 'none'],
+    #                             help='''How to report intervals that are not
+    #                                     covered by the model.'''
+    #                             )
+    # parser_extract.add_argument('--genome',
+    #                             help='''FASTA file containing reference
+    #                                     sequence.''')
+    # parser_extract.add_argument('--regions',
+    #                             default='all',
+    #                             help='''Gene region(s) to include as uppercase,
+    #                                     as a comma-separated list. Default is
+    #                                     to have all exon annotations in
+    #                                     uppercase ("all")''')
+    parser_extract.add_argument('--gtfout',
+                                help='Output GTF file (optional).')
+    parser_extract.add_argument('infile',
+                                nargs='?', type=argparse.FileType('rU'),
+                                default=sys.stdin,
+                                help="Input GTF file. Default: stdin.")
+    parser_extract.add_argument('outfile',
+                                nargs='?', type=argparse.FileType('w'),
+                                default=sys.stdout,
+                                help="Output FASTA file. Default: stdout.")
+    parser_extract.set_defaults(func=gtftools_extract)
 
     try:
         args = parser.parse_args()

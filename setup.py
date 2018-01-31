@@ -16,6 +16,7 @@ setup(
     packages=['telebuilder'],
     install_requires=[
         'intervaltree',
+        'biopython',
     ],
     entry_points={
         'console_scripts': [

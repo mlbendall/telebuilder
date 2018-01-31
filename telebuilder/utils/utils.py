@@ -160,3 +160,16 @@ def raw_input_stderr(*args):
     sys.stdout = sys.__stdout__
     return x    
 
+
+def wraplines(s, wrap=60):
+    """ Wrap lines
+
+    Args:
+        s: String
+        wrap: Number of characters per line
+
+    Returns:
+        str: String with newlines.
+
+    """
+    return '\n'.join(s[i:(i+wrap)] for i in range(0, len(s), wrap))
