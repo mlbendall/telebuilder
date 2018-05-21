@@ -76,13 +76,30 @@ def gtftools_tsv(args):
         print >> sys.stdout, '\t'.join(map(str, r))
 
 from Bio.Seq import Seq
+import re
 
 def gtftools_extract(args):
     if args.gtfout:
         outgtf = open(args.gtfout, 'w')
 
+    # Create set of selected locus search strings
+    selected_loci = set()
+    if args.locus:
+        selected_loci |= set([r'^%s$' % _ for _ in args.locus])
+    if args.locus_regex:
+        selected_loci |= set([r'%s' % _ for _ in args.locus_regex])
+    if args.locus_file:
+        selected_loci |= set([r'^%s$' % l.strip('\n') for l in args.locus_file])
+
+    selected_regex = '|'.join('(?:{0})'.format(x) for x in selected_loci)
+    print selected_regex
+    selected_regex = re.compile(selected_regex)
+
     clusters = read_gtf_clusters(args.infile)
     for gc in clusters:
+        if not selected_regex.search(gc.attr['locus']):
+            continue
+
         reg = (gc.chrom, gc.start, gc.end)
 
         # Adjust annotations to locus coordinates
@@ -156,7 +173,8 @@ def gtftools_extract(args):
         if args.gtfout:
             print >>outgtf, adjusted
     #
-    outgtf.close()
+    if args.gtfout:
+        outgtf.close()
     return
 
 
@@ -262,6 +280,21 @@ def console():
     #                                     as a comma-separated list. Default is
     #                                     to have all exon annotations in
     #                                     uppercase ("all")''')
+    parser_extract.add_argument('--locus',
+                                action='append',
+                                help='''Name of locus to be extracted. Multiple
+                                        loci can be specified by providing this
+                                        argument multiple times.''')
+    parser_extract.add_argument('--locus_regex',
+                                action='append',
+                                help='''Regular expression matching locus to be
+                                        extracted. Multiple loci can be
+                                        specified by providing this argument
+                                        multiple times.''')
+    parser_extract.add_argument('--locus_file',
+                                type=argparse.FileType('rU'),
+                                help='''File containing locus names to be
+                                        extracted, one per line.''')
     parser_extract.add_argument('--gtfout',
                                 help='Output GTF file (optional).')
     parser_extract.add_argument('infile',
