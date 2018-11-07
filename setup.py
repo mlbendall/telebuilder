@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
@@ -13,7 +13,7 @@ setup(
     author='Matthew L. Bendall',
     author_email='bendall@gwu.edu',
     license='MIT',
-    packages=['telebuilder'],
+    packages=find_packages(),
     install_requires=[
         'intervaltree',
         'biopython',
