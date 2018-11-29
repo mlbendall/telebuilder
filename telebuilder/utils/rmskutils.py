@@ -103,3 +103,63 @@ def ucsc_download(build, query, outh=PIPE):
     o, e = p1.communicate()
     if e: print >>sys.stderr, e
     return o
+
+class RepeatMaskerOut(object):
+
+    def __init__(self, l):
+        self.line = l.strip('\n')
+        fields = self.line.strip().split()
+        self.bitscore = int(fields[0])
+        self.pctdiv = float(fields[1])
+        self.pctdel = float(fields[2])
+        self.pctint = float(fields[3])
+        self.chrom = fields[4]
+        self.start = int(fields[5])
+        self.end = int(fields[6])
+        self.left = int(fields[7].strip('()'))
+        self.strand = '-' if fields[8] == 'C' else fields[8]
+        self.repName = fields[9]
+        if '/' in fields[10]:
+            self.repClass, self.repFamily = fields[10].split('/')
+        else:
+            self.repClass = self.repFamily = fields[10]
+        if self.strand == '+':
+            self.repStart = int(fields[11])
+            self.repEnd = int(fields[12])
+            self.repLeft = int(fields[13].strip('()'))
+        else:
+            self.repStart = int(fields[13])
+            self.repEnd = int(fields[12])
+            self.repLeft = int(fields[11].strip('()'))
+
+    def to_gtf(self):
+        _g = GTFLine()
+        _g.chrom = self.chrom  # chrom
+        _g.source = 'RepeatMasker'  # source
+        _g.feature = 'similarity'  # feature
+        _g.start = self.start
+        _g.end = self.end  # end
+        _g.score = self.bitscore  # score
+        _g.strand = self.strand  # strand
+        _g.frame = '.'  # frame
+        _g.attr = {
+            'repStart': self.repStart,
+            'repEnd': self.repEnd,
+            'repLeft': self.repLeft,
+            'repName': self.repName,
+            'repClass': self.repClass,
+            'repFamily': self.repFamily,
+        }
+        return _g
+
+    def fmt(self):
+        return self.line
+
+    def __str__(self):
+        return self.fmt()
+
+
+
+
+
+
