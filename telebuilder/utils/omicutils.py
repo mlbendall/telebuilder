@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import re
 from collections import OrderedDict
 
@@ -43,4 +44,14 @@ def get_sequence_ucsc(build, region):
     seq = str(m.group(2)).replace('\n', '')
     assert len(seq) == reported_length, 'Sequence length != reported length'
     assert reported_length == region[2]-region[1]+1, 'Calculated length != reported length'
+    return seq
+
+def get_sequence_fasta(seqdict, region):
+    py_start = int(region[1]) - 1
+    py_end = int(region[2])
+    if region[0] not in seqdict:
+        print >>sys.stderr, 'Skipping, sequence %s not loaded' % region[0]
+        return None
+    seq = str(seqdict[region[0]][py_start : py_end].seq)
+    assert len(seq) == region[2]-region[1]+1, 'Calculated length (%d) != reported length (%d)' % (len(seq), region[2]-region[1]+1)
     return seq

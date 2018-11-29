@@ -5,10 +5,11 @@ import sys
 import os
 import re
 
+from Bio import SeqIO
 from Bio.Seq import Seq
 
 from utils.omicutils import ChromosomeDict
-from utils.omicutils import get_sequence_ucsc
+from utils.omicutils import get_sequence_ucsc, get_sequence_fasta
 # from utils.gtfutils import cluster_gtf, slop_gtf, intersect_gtf, conflict_gtf
 from utils import _get_build_from_file
 from utils.utils import wraplines
@@ -82,6 +83,10 @@ def gtftools_extract(args):
     if args.gtfout:
         outgtf = open(args.gtfout, 'w')
 
+    if args.genome:
+        genome_dict = {s.id:s for s in SeqIO.parse(args.genome, 'fasta')}
+        print >>sys.stderr, 'Loading genome complete.'
+
     # Create set of selected locus search strings
     selected_loci = set()
     if args.locus:
@@ -120,7 +125,12 @@ def gtftools_extract(args):
                 h.attr['name'] = h.attr['repName']
             adjusted.add(h)
 
-        rawseq = get_sequence_ucsc(args.genome_build, reg)
+        if args.genome:
+            rawseq = get_sequence_fasta(genome_dict, reg)
+            if rawseq is None:
+                continue
+        else:
+            rawseq = get_sequence_ucsc(args.genome_build, reg)
 
         if gc.strand == '-':
             # Reverse complement the sequence
@@ -144,7 +154,8 @@ def gtftools_extract(args):
             # if 'all' in upregions or n.attr['geneRegion'] in upregions:
             #     selexons = selexons[0:(n.start-1)] + selexons[(n.start-1):n.end].upper() + selexons[n.end:]
 
-        assert len(allexons) == len(rawseq) and allexons.lower() == rawseq
+        assert len(allexons) == len(rawseq)
+        assert allexons.lower() == rawseq.lower(), '%s\n%s' % (allexons.lower(), rawseq)
 
         # Create annotations for introns
         for m in re.finditer('[a-z]+', allexons):
@@ -271,9 +282,9 @@ def console():
     #                             help='''How to report intervals that are not
     #                                     covered by the model.'''
     #                             )
-    # parser_extract.add_argument('--genome',
-    #                             help='''FASTA file containing reference
-    #                                     sequence.''')
+    parser_extract.add_argument('--genome',
+                                help='''FASTA file containing reference
+                                        sequence.''')
     # parser_extract.add_argument('--regions',
     #                             default='all',
     #                             help='''Gene region(s) to include as uppercase,
