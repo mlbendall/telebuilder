@@ -147,7 +147,7 @@ def intersect_gtf(gtfA, gtfBs, stranded=True):
     for g in gtfA:
         cchrom = _chromstrand(g, stranded)
         if cchrom in bychrom:
-            m = [iv.data for iv in bychrom[cchrom].search(g.start, g.end)]
+            m = [iv.data for iv in bychrom[cchrom].overlap(g.start, g.end)]
         else:
             m = []
         yield (g, m)

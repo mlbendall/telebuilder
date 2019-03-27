@@ -69,7 +69,7 @@ def fileopen(fun):
 
     """
     def wrapper(*args, **kwargs):
-        if type(args[0]) is str:
+        if isinstance(args[0], str):
             try:
                 fh = open(args[0], 'rU')
                 return fun(fh, *args[1:], **kwargs)

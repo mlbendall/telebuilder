@@ -97,7 +97,7 @@ def gtftools_extract(args):
         selected_loci |= set([r'^%s$' % l.strip('\n') for l in args.locus_file])
 
     selected_regex = '|'.join('(?:{0})'.format(x) for x in selected_loci)
-    print selected_regex
+    #print selected_regex
     selected_regex = re.compile(selected_regex)
 
     clusters = read_gtf_clusters(args.infile)
