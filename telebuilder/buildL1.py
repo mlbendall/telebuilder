@@ -8,11 +8,13 @@ import string
 from glob import glob
 from collections import defaultdict
 
-from utils import _get_build_from_file
-from utils.gtfutils import sort_gtf, intersect_gtf
-from utils.gtfutils import read_gtf_file, write_gtf_file
-from utils.omicutils import ChromosomeDict
-from utils import l1baseutils
+from .utils import _get_build_from_file
+from .utils.gtfutils import sort_gtf, intersect_gtf
+from .utils.gtfutils import read_gtf_file, write_gtf_file
+from .utils.omicutils import ChromosomeDict
+from .utils import l1baseutils
+
+from . import __version__
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
@@ -33,7 +35,7 @@ def namelocs(locs, cytogtf, cdict):
             band = ''
         byband[(chrom, band)].append(g)
 
-    for (chrom, band), gtfs in byband.iteritems():
+    for (chrom, band), gtfs in byband.items():
         if len(gtfs) == 1:
             suffixes = ['']
         else:
@@ -55,7 +57,7 @@ def main(args):
     if os.path.exists(args.chrom_sizes):
         cdict = ChromosomeDict(args.chrom_sizes)
     else:
-        print >>sys.stderr, '[WARNING] Chromosome sizes were not found'
+        print('[WARNING] Chromosome sizes were not found', file=sys.stderr)
         cdict = ChromosomeDict()
 
     # Load cytoband
@@ -63,10 +65,10 @@ def main(args):
         cytoband = list(read_gtf_file(args.cytoband))
     else:
         cytoband = None
-        print >> sys.stderr, '[WARNING] Cytoband was not found'
+        print('[WARNING] Cytoband was not found', file=sys.stderr)
 
     ''' Stage 1: Convert L1Base tracks to GTF.'''
-    print >>sys.stderr, '*** Stage 1: Converting L1Base tracks to GTF.'
+    print('*** Stage 1: Converting L1Base tracks to GTF.', file=sys.stderr)
     all_locs = defaultdict(list)
     groups = [('L1FLI', 'flil1'),
               ('L1ORF2', 'orf2l1'),
@@ -82,11 +84,11 @@ def main(args):
             g.attr['category'] = group
             all_locs[group].append(g)
 
-    for group, locs in all_locs.iteritems():
-        print '%s: %d' % (group, len(locs))
+    for group, locs in all_locs.items():
+        print('%s: %d' % (group, len(locs)))
 
     ''' Stage 2: Remove Redundant annotations'''
-    print >>sys.stderr, '*** Stage 2: Removing redundant annotations.'
+    print('*** Stage 2: Removing redundant annotations.', file=sys.stderr)
     for idx_a in range(len(groups)-1, 0, -1):
         groupA = groups[idx_a][0]
         if groupA not in all_locs: continue
@@ -100,16 +102,16 @@ def main(args):
         for g in to_remove:
             all_locs[groupA].remove(g)
 
-    for group, locs in all_locs.iteritems():
-        print '%s: %d' % (group, len(locs))
+    for group, locs in all_locs.items():
+        print('%s: %d' % (group, len(locs)))
 
-    print >>sys.stderr, '*** Stage 8: Naming loci'
+    print('*** Stage 8: Naming loci', file=sys.stderr)
     final_locs = {}
-    for group, locs in all_locs.iteritems():
+    for group, locs in all_locs.items():
         final_locs[group] = namelocs(locs, cytoband, cdict)
 
 
-    for group, locs in final_locs.iteritems():
+    for group, locs in final_locs.items():
         with open(os.path.join(args.outdir, '%s.gtf' % group), 'w') as outh:
             write_gtf_file(sort_gtf(locs, cdict.reforder), outh)
 
@@ -118,6 +120,12 @@ def console():
     import argparse
     parser = argparse.ArgumentParser(
         description='''Construct L1 annotations from L1 Base'''
+    )
+    parser.add_argument(
+        '-V', '--version',
+        action='version',
+        help='Show the version number and exit.',
+        version=f"telebuilder {__version__}",
     )
     group1 = parser.add_argument_group('Input')
     group1.add_argument('--genome_build', default=_get_build_from_file(),

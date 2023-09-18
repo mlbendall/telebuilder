@@ -8,34 +8,36 @@ from glob import glob
 from collections import defaultdict, Counter
 from itertools import chain
 
-from utils import rmskutils
-from utils import ervutils
-from utils import _get_build_from_file
+from .utils import rmskutils
+from .utils import ervutils
+from .utils import _get_build_from_file
 
-from utils.utils import tsv, collapse_list, raw_input_stderr
-from utils.gtfutils import cluster_gtf, sort_gtf, slop_gtf, intersect_gtf, conflict_gtf, region_gtf
-from utils.gtfutils import read_gtf_file, write_gtf_file
-from utils.omicutils import ChromosomeDict
-from utils.igvutils import igv_init
+from .utils.utils import tsv, collapse_list, raw_input_stderr
+from .utils.gtfutils import cluster_gtf, sort_gtf, slop_gtf, intersect_gtf, conflict_gtf, region_gtf
+from .utils.gtfutils import read_gtf_file, write_gtf_file
+from .utils.omicutils import ChromosomeDict
+from .utils.igvutils import igv_init
+
+from . import __version__
 
 __author__ = 'Matthew L. Bendall'
-__copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
+__copyright__ = "Copyright (C) 2023 Matthew L. Bendall"
 
 
 def stage1(models, trackdir, gbuild, overwrite=False, logh=sys.stderr):
     ''' Stage 1: Download RMSK tracks from UCSC
     '''
-    print >>logh, '*** Stage 1: Downloading RepeatMasker tracks from UCSC'    
+    print('*** Stage 1: Downloading RepeatMasker tracks from UCSC', file=logh)    
     track_files = []
     for m in models:
         tf = os.path.join(trackdir, '%s.%s.txt' % (gbuild, m))
         if not os.path.exists(tf) or overwrite:
-            print >>sys.stderr, '\tDownloading %s RMSK track for %s' % (gbuild, m)
+            print('\tDownloading %s RMSK track for %s' % (gbuild, m), file=sys.stderr)
             with open(tf, 'w') as outh:
                 qry = rmskutils.RMSK_MODEL_QUERY % m
                 response = rmskutils.ucsc_download(gbuild, qry, outh=outh)
         else:
-            print >>sys.stderr, '\tFound track for %s (%s)' % (m, tf)        
+            print('\tFound track for %s (%s)' % (m, tf), file=sys.stderr)        
         track_files.append((m, tf))
     
     return track_files
@@ -43,13 +45,13 @@ def stage1(models, trackdir, gbuild, overwrite=False, logh=sys.stderr):
 def stage2(track_files, int_model, logh=sys.stderr):
     ''' Stage 2: Convert RMSK tracks to GTF
     '''
-    print >>logh, '*** Stage 2: Converting RepeatMasker tracks to GTF'    
+    print('*** Stage 2: Converting RepeatMasker tracks to GTF', file=logh)    
     gtfs = defaultdict(list)
     mlens = {}
     for m,f in track_files:
         lines = tsv(f)
         try:
-            header = lines.next()
+            header = next(lines)
             assert all(h==n for h,(n,t) in zip(header, rmskutils.RMSKLine.COLS))
             rmsk = [rmskutils.RMSKLine(l) for l in lines]
             mlens.update(rmskutils.guess_rmsk_model_lengths(rmsk))
@@ -59,27 +61,27 @@ def stage2(track_files, int_model, logh=sys.stderr):
                 g.attr['geneRegion'] = 'internal' if m in int_model else 'ltr'
                 gtfs[m].append(g)
         except StopIteration:
-            print >>logh, '[WARNING] %s has no records (%s is empty).' % (m, f)
+            print('[WARNING] %s has no records (%s is empty).' % (m, f), file=logh)
 
-    print >>logh, "\tInternal model lengths:"
+    print("\tInternal model lengths:", file=logh)
     for m in int_model:
-        print >> logh, '\t\t%s%d' % (m.ljust(20), mlens[m])
+        print('\t\t%s%d' % (m.ljust(20), mlens[m]), file=logh)
 
-    print >>logh, "\tLTR model lengths:"
-    lmods = sorted(k for k in mlens.keys() if k not in int_model)
+    print("\tLTR model lengths:", file=logh)
+    lmods = sorted(k for k in list(mlens.keys()) if k not in int_model)
     for m in lmods:
-        print >> logh, '\t\t%s%d' % (m.ljust(20), mlens[m])
+        print('\t\t%s%d' % (m.ljust(20), mlens[m]), file=logh)
     
     return gtfs, mlens
 
 def stage3(igtfs, cdict, shortdist, longdist, logh=sys.stderr):
     ''' Stage 3: Merge internal annotations '''
-    print >>logh, '*** Stage 3: Merging internal annotations'        
-    print >>logh, '\tFound %d internal annotations' % len(igtfs)        
+    print('*** Stage 3: Merging internal annotations', file=logh)        
+    print('\tFound %d internal annotations' % len(igtfs), file=logh)        
     # Merge the internal annotations that are very close (<10 bp)
-    print >>logh, '\tMerging annotations < %d bp apart' % shortdist
+    print('\tMerging annotations < %d bp apart' % shortdist, file=logh)
     iclusters = cluster_gtf(igtfs, dist=shortdist)
-    print >>logh, '\t%d merged annotations after first merge' % len(iclusters)
+    print('\t%d merged annotations after first merge' % len(iclusters), file=logh)
     
     # Merge the internal annotations that are fairly close (<10kb) and have consecutive models
     def consecutive_rmsk_model(a, b):
@@ -92,9 +94,9 @@ def stage3(igtfs, cdict, shortdist, longdist, logh=sys.stderr):
             # Determine if the left cluster is a continuation of the right cluster
             return right.members[0].attr['repStart'] < left.members[-1].attr['repStart']
 
-    print >>logh, '\tMerging annotations < %d bp apart that have consecutive models' % (longdist)    
+    print('\tMerging annotations < %d bp apart that have consecutive models' % (longdist), file=logh)    
     iclusters = cluster_gtf(iclusters, dist=longdist, criteria=consecutive_rmsk_model)
-    print >>logh, '\t%d merged annotations after second merge' % len(iclusters)
+    print('\t%d merged annotations after second merge' % len(iclusters), file=logh)
     
     # Sort clusters and add attributes for locus and internal model
     iclusters = sort_gtf(iclusters, cdict.reforder)
@@ -106,9 +108,9 @@ def stage3(igtfs, cdict, shortdist, longdist, logh=sys.stderr):
 
 def stage4(iclusters, ltr_gtfs, flanksize, cdict, logh=sys.stderr):
     ''' Stage 4: Find LTRs flanking internal clusters '''
-    print >>logh, '*** Stage 4: Finding LTRs that flank internal regions'    
-    print >>logh, '\tUsing flanksize = %d' % flanksize
-    print >>logh, '\tFound %d LTR annotations' % sum(map(len, ltr_gtfs))
+    print('*** Stage 4: Finding LTRs that flank internal regions', file=logh)    
+    print('\tUsing flanksize = %d' % flanksize, file=logh)
+    print('\tFound %d LTR annotations' % sum(map(len, ltr_gtfs)), file=logh)
     
     # Create annotations with flanking regions (slop)
     slop = slop_gtf(iclusters, flanksize, cdict.reflen)
@@ -125,8 +127,8 @@ def stage4(iclusters, ltr_gtfs, flanksize, cdict, logh=sys.stderr):
             g.add(h.copy())
         mclusters.append(g)
     
-    print >>logh, '\t%d merged clusters' % len(mclusters)
-    print >>logh, '\t%d unmerged internal clusters' % len(iclust_d.values())
+    print('\t%d merged clusters' % len(mclusters), file=logh)
+    print('\t%d unmerged internal clusters' % len(list(iclust_d.values())), file=logh)
     
     # return sort_gtf(mclusters + iclust_d.values(), cdict.reforder)
     return sort_gtf(mclusters, cdict.reforder)
@@ -134,7 +136,7 @@ def stage4(iclusters, ltr_gtfs, flanksize, cdict, logh=sys.stderr):
 
 def stage5(mclusters, mlens, logh=sys.stderr):
     ''' Add cluster attributes '''
-    print >>logh, '*** Stage 5: Adding cluster attributes'
+    print('*** Stage 5: Adding cluster attributes', file=logh)
     def calculate_internal_coverage(_clust):
         ''' Calculate number of internal model bases covered in locus
             This is the number of "query" bases represented, not reference bases.
@@ -169,21 +171,21 @@ def stage5(mclusters, mlens, logh=sys.stderr):
 
 
 def stage6(mclusters, min_model_pct, logh=sys.stderr):
-    print >>logh, '*** Stage 6: Filtering short clusters' 
+    print('*** Stage 6: Filtering short clusters', file=logh) 
     rej = [c for c in mclusters if float(c.attr['model_pct']) < (min_model_pct * 100)]
     mc = [c for c in mclusters if float(c.attr['model_pct']) >= (min_model_pct * 100)]
-    print >>logh, '\t%d rejected clusters' % len(rej)
-    print >>logh, '\t%d clusters' % len(mc)
+    print('\t%d rejected clusters' % len(rej), file=logh)
+    print('\t%d clusters' % len(mc), file=logh)
     return mc, rej
 
 def stage7(mclusters, auto, igv, dest, logh=sys.stderr):
-    print >>logh, '*** Stage 7: Resolving conflicts'
+    print('*** Stage 7: Resolving conflicts', file=logh)
     conflicts = conflict_gtf(mclusters)
     if len(conflicts) == 0:
-        print >>sys.stderr, '\tNo conflicts found'
+        print('\tNo conflicts found', file=sys.stderr)
         lcons = []
     else:
-        print >>sys.stderr, '\t%d conflict(s) to resolve' % len(conflicts)
+        print('\t%d conflict(s) to resolve' % len(conflicts), file=sys.stderr)
         lcons = ervutils.inspect_conflicts(conflicts, auto, igv, dest)
         
         for lcon in lcons:
@@ -198,12 +200,12 @@ def stage7(mclusters, auto, igv, dest, logh=sys.stderr):
     return mclusters, lcons
 
 # Alphabet suffixes
-SUFFIXES = list(string.letters[:26])
+SUFFIXES = list(string.ascii_letters[:26])
 # In case there are more than 26:
 SUFFIXES += [a+b for b in SUFFIXES for a in SUFFIXES]
 
 def stage8(mclusters, cytogtf, fam, logh=sys.stderr):
-    print >>logh, '*** Stage 8: Naming loci'
+    print('*** Stage 8: Naming loci', file=logh)
     if cytogtf is None:
         for g in mclusters:
             g.set_attr('transcript_id', g.attr['locus'])
@@ -219,7 +221,7 @@ def stage8(mclusters, cytogtf, fam, logh=sys.stderr):
                 band = ''
             byband[(chrom, band)].append(g)
 
-        for (chrom, band), gtfs in byband.iteritems():
+        for (chrom, band), gtfs in byband.items():
             if len(gtfs) == 1:
                 suffixes = ['']
             else:
@@ -244,35 +246,35 @@ def main(args):
 
     if args.genome_build is None:
         sys.exit("ERROR: --genome_build is required.")
-    print >>logh, "[VERBOSE] Genome build: %s" % args.genome_build
+    print("[VERBOSE] Genome build: %s" % args.genome_build, file=logh)
 
     # Create track directory, if necessary
     if not os.path.isdir(args.track_dir):
-        print >>logh, "[VERBOSE] Creating track directory: %s" % args.track_dir
+        print("[VERBOSE] Creating track directory: %s" % args.track_dir, file=logh)
         os.makedirs(args.track_dir)
     else:
-        print >>logh, "[VERBOSE] Using track directory: %s" % args.track_dir
+        print("[VERBOSE] Using track directory: %s" % args.track_dir, file=logh)
 
     # Create output directory, if necessary
     dest = os.path.join(args.outdir, args.fam)
     if not os.path.isdir(dest):
-        print >>logh, "[VERBOSE] Creating output directory: %s" % dest
+        print("[VERBOSE] Creating output directory: %s" % dest, file=logh)
         os.makedirs(dest)
     else:
-        print >>logh, "[VERBOSE] Using output directory: %s" % dest
+        print("[VERBOSE] Using output directory: %s" % dest, file=logh)
 
     
     # Setup IGV and snapshot directory
     igv = None if args.no_igv else igv_init(args.genome_build)
     if igv is None:
         if not args.no_igv:
-            print >>sys.stderr, "[WARNING] Could not connect to IGV."
+            print("[WARNING] Could not connect to IGV.", file=sys.stderr)
         else:
-            print >>logh, "[VERBOSE] Not using IGV."
+            print("[VERBOSE] Not using IGV.", file=logh)
         snapshot_dir = None
         snapshot_final = False
     else:
-        print >>logh, "[VERBOSE] Using IGV."
+        print("[VERBOSE] Using IGV.", file=logh)
         if args.compare_gtfs and os.path.isdir(args.compare_gtfs):
             other_gtfs = glob(os.path.join(args.compare_gtfs, '*.gtf'))
             other_gtfs += glob(os.path.join(args.compare_gtfs, '*.gtf.gz'))
@@ -282,28 +284,28 @@ def main(args):
         if args.no_snapshot is False:
             snapshot_dir = os.path.join(dest, 'snapshots')
             if not os.path.isdir(snapshot_dir):
-                print >> logh, "[VERBOSE] Creating snapshot directory: %s" % snapshot_dir
+                print("[VERBOSE] Creating snapshot directory: %s" % snapshot_dir, file=logh)
                 os.makedirs(snapshot_dir)
             igv.snapshotDirectory(snapshot_dir)
-            print >>logh, "[VERBOSE] Snapshots will be saved to %s" % snapshot_dir
+            print("[VERBOSE] Snapshots will be saved to %s" % snapshot_dir, file=logh)
             snapshot_final = args.snapshot_final
         else:
             snapshot_dir = None
             snapshot_final = False
 
     if snapshot_final:
-        print >>logh, "[VERBOSE] Taking snapshots of final loci."
+        print("[VERBOSE] Taking snapshots of final loci.", file=logh)
 
     # Keep intermediate files?
     save_intermediate = args.save_intermediate
     if save_intermediate:
-        print >>logh, "[VERBOSE] Saving intermediate GTFs"
+        print("[VERBOSE] Saving intermediate GTFs", file=logh)
 
     # Load chromosome sizes
     if os.path.exists(args.chrom_sizes):
         cdict = ChromosomeDict(args.chrom_sizes)
     else:
-        print >>sys.stderr, '[WARNING] Chromosome sizes were not found'
+        print('[WARNING] Chromosome sizes were not found', file=sys.stderr)
         cdict = ChromosomeDict()
 
 
@@ -318,7 +320,7 @@ def main(args):
     ltr_model = [m for m in ltr_model if m in gtfs] # Revise LTR model
 
     if save_intermediate:
-        for m, gtf in gtfs.iteritems():
+        for m, gtf in gtfs.items():
             with open(os.path.join(dest, '%s.gtf' % m), 'w') as outh:
                 write_gtf_file(sort_gtf(gtf, cdict.reforder), outh)
 
@@ -365,12 +367,12 @@ def main(args):
         cytoband = read_gtf_file(args.cytoband)
     else:
         cytoband = None
-        print >> sys.stderr, '[WARNING] Cytoband was not found'
+        print('[WARNING] Cytoband was not found', file=sys.stderr)
 
     mclusters = stage8(mclusters, cytoband, args.fam)
     
     ''' Stage 9: Output '''
-    print >>sys.stderr, '*** Stage 9. Final Output'
+    print('*** Stage 9. Final Output', file=sys.stderr)
     final_gtf_file = os.path.join(dest, '%s.gtf' % args.fam)
     final_gtf = sort_gtf(mclusters, cdict.reforder)
     with open(final_gtf_file, 'w') as outh:
@@ -381,11 +383,11 @@ def main(args):
 
     # Review conflicts and display or snapshot
     if len(lcons) == 0:
-        print >> logh, "[VERBOSE] No conflicts."
+        print("[VERBOSE] No conflicts.", file=logh)
     else:
         for i, lcon in enumerate(lcons):
-            print >>sys.stderr, '[REVIEW] Conflict %02d.' % (i+1)
-            print >>sys.stderr, '\t%s' % lcon.display_review_text()
+            print('[REVIEW] Conflict %02d.' % (i+1), file=sys.stderr)
+            print('\t%s' % lcon.display_review_text(), file=sys.stderr)
             if snapshot_dir is not None or args.review:
                 igv.goto(lcon.region_str())
             if snapshot_dir is not None:
@@ -400,7 +402,7 @@ def main(args):
             igv.snapshot('%s.png' % g.attr['transcript_id'])
 
     ''' Summary '''
-    print >>sys.stderr, '*** Stage 10. Summary'
+    print('*** Stage 10. Summary', file=sys.stderr)
     categories = Counter()
     ltr_usage = defaultdict(Counter)
     for g in final_gtf:
@@ -419,21 +421,21 @@ def main(args):
             else:
                 ltr_usage['oneside'][rn[0]] += 1
 
-    print >>sys.stderr, '\n\n'
-    print >>sys.stderr, '%s %s summary %s' % ('*'*20, args.fam, '*'*20)
-    print >> sys.stderr, 'Locus types:'
+    print('\n\n', file=sys.stderr)
+    print('%s %s summary %s' % ('*'*20, args.fam, '*'*20), file=sys.stderr)
+    print('Locus types:', file=sys.stderr)
     for cat in ['prototype', 'oneside', 'internal',]:
-        print >>sys.stderr, '\t%s%d' % (cat.ljust(20), categories[cat])
+        print('\t%s%d' % (cat.ljust(20), categories[cat]), file=sys.stderr)
     for cat,v in categories.most_common():
         if cat not in ['prototype', 'oneside', 'internal',]:
-            print >> sys.stderr, '\t%s%d' % (cat.ljust(20), categories[cat])
-    print >> sys.stderr, 'LTR usage (prototype):'
+            print('\t%s%d' % (cat.ljust(20), categories[cat]), file=sys.stderr)
+    print('LTR usage (prototype):', file=sys.stderr)
     for k,v in ltr_usage['prototype'].most_common():
-        print >> sys.stderr, '\t%s%d' % (k.ljust(20), v)
+        print('\t%s%d' % (k.ljust(20), v), file=sys.stderr)
 
-    print >> sys.stderr, 'LTR usage (oneside):'
+    print('LTR usage (oneside):', file=sys.stderr)
     for k, v in ltr_usage['oneside'].most_common():
-        print >> sys.stderr, '\t%s%d' % (k.ljust(20), v)
+        print('\t%s%d' % (k.ljust(20), v), file=sys.stderr)
 
 
 
@@ -441,6 +443,12 @@ def console():
     import argparse
     parser = argparse.ArgumentParser(
         description='''Construct ERV annotations for an ERV family'''
+    )
+    parser.add_argument(
+        '-V', '--version',
+        action='version',
+        help='Show the version number and exit.',
+        version=f"telebuilder {__version__}",
     )
     group1 = parser.add_argument_group('Input')
     group1.add_argument('--genome_build', default=_get_build_from_file(),

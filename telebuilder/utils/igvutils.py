@@ -30,24 +30,24 @@ class IGV:
             self.socket.connect((self.host, self.port))
             self.connected = True
         except socket.error as e:
-            print >>sys.stderr, e
+            print(e, file=sys.stderr)
             if e[0] == 61:
-                print >>sys.stderr, "Try opening IGV and ensure port is set to %d" % self.port
+                print("Try opening IGV and ensure port is set to %d" % self.port, file=sys.stderr)
             self.connected = False
     
     def _test(self):
         if self.send('echo', check_response='echo'):
             if not self.quiet:
-                print >>sys.stderr, "Test successful"
+                print("Test successful", file=sys.stderr)
         else:
-                print >>sys.stderr, "ERROR: Test failed"
+                print("ERROR: Test failed", file=sys.stderr)
     
     def close(self):
         self.socket.close()
     
     def send(self, command, check_response='OK', attempts=5):
         if not self.connected:
-            print >>sys.stderr, "ERROR: Not connected to IGV."
+            print("ERROR: Not connected to IGV.", file=sys.stderr)
             return False
          
         success = False
@@ -60,16 +60,16 @@ class IGV:
                 if response.strip() == check_response:
                     success = True
                 else:
-                    print >>sys.stderr, 'WARNING: IGV responded "%s"' % response.strip()
+                    print('WARNING: IGV responded "%s"' % response.strip(), file=sys.stderr)
             except socket.timeout:
-                print >>sys.stderr, "WARNING: socket timed out on attempt %d" % attempt
+                print("WARNING: socket timed out on attempt %d" % attempt, file=sys.stderr)
                 self._connect_socket()
             
             if attempt >= attempts:
                 break
         
         if not success:
-            print >>sys.stderr, "ERROR: Send failed after %d attempts." % attempt
+            print("ERROR: Send failed after %d attempts." % attempt, file=sys.stderr)
         
         return success
     
@@ -177,7 +177,7 @@ class IGV:
         '''
         if self.send('setSleepInterval %d' % int(ms)):
             if not self.quiet:
-                print >>sys.stderr, 'Setting sleep interval to %d' % int(ms)
+                print('Setting sleep interval to %d' % int(ms), file=sys.stderr)
 
 
 def igv_init(genome, tracks=[]):

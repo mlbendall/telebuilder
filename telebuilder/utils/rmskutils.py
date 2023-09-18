@@ -5,8 +5,8 @@ import re
 from collections import defaultdict, Counter
 from subprocess import Popen, PIPE
 
-from utils import numstr
-from gtfutils import GTFLine
+from .utils import numstr
+from .gtfutils import GTFLine
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
@@ -91,17 +91,17 @@ def guess_rmsk_model_lengths(rls):
     for rl in rls:
         sz = (rl.repEnd - rl.repLeft) if rl.strand == '+' else (rl.repEnd - rl.repStart)
         ret[rl.repName].append(sz)
-    return {k:Counter(v).most_common()[0][0] for k,v in ret.iteritems()}
+    return {k:Counter(v).most_common()[0][0] for k,v in ret.items()}
 
 
 RMSK_MODEL_QUERY = '''SELECT * FROM rmsk WHERE repName = '%s';'''
 
 def ucsc_download(build, query, outh=PIPE):
     cmd = 'mysql -h genome-mysql.cse.ucsc.edu -u genome -D %s -A -e "%s"' % (build, query)
-    print >>sys.stderr, cmd
+    print(cmd, file=sys.stderr)
     p1 = Popen(cmd, shell=True, stdout=outh, stderr=PIPE)
     o, e = p1.communicate()
-    if e: print >>sys.stderr, e
+    if e: print(e, file=sys.stderr)
     return o
 
 class RepeatMaskerOut(object):

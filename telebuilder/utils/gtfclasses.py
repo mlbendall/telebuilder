@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from utils import numstr, attrstr, overlap_length
+from .utils import numstr, attrstr, overlap_length
 
-import gtfutils
+from . import gtfutils
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
@@ -44,7 +44,7 @@ class GTFLine(object):
     def _fmt_attrs(self):
         if not self.attr:
             return '.'
-        keyorder = sorted(self.attr.keys(), key=lambda x:
+        keyorder = sorted(list(self.attr.keys()), key=lambda x:
         self.ATTRORDER.index(x) if x in self.ATTRORDER else x)
         ret = ['%s "%s";' % (k, self.attr[k]) for k in keyorder]
         return ' '.join(ret)
@@ -60,7 +60,7 @@ class GTFLine(object):
             return gdict[self.chrom][self.start:self.end].reverse_complement()
 
     def asdict(self):
-        ret = {k: v for k, v in self.attr.iteritems()}
+        ret = {k: v for k, v in self.attr.items()}
         ret.update({n: getattr(self, n) for (n, t, d) in self.COLS[:8]})
         return ret
 

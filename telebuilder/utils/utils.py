@@ -156,7 +156,7 @@ def raw_input_stderr(*args):
 
     """
     sys.stdout = sys.stderr
-    x = raw_input(*args)
+    x = input(*args)
     sys.stdout = sys.__stdout__
     return x    
 

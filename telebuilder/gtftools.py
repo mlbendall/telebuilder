@@ -8,14 +8,16 @@ import re
 from Bio import SeqIO
 from Bio.Seq import Seq
 
-from utils.omicutils import ChromosomeDict
-from utils.omicutils import get_sequence_ucsc, get_sequence_fasta
+from .utils.omicutils import ChromosomeDict
+from .utils.omicutils import get_sequence_ucsc, get_sequence_fasta
 # from utils.gtfutils import cluster_gtf, slop_gtf, intersect_gtf, conflict_gtf
-from utils import _get_build_from_file
-from utils.utils import wraplines
-from utils.gtfutils import sort_gtf, intersect_gtf
-from utils.gtfutils import read_gtf_file, write_gtf_file, read_gtf_clusters
-from utils.gtfclasses import GTFLine, GTFCluster
+from .utils import _get_build_from_file
+from .utils.utils import wraplines
+from .utils.gtfutils import sort_gtf, intersect_gtf
+from .utils.gtfutils import read_gtf_file, write_gtf_file, read_gtf_clusters
+from .utils.gtfclasses import GTFLine, GTFCluster
+
+from . import __version__
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
@@ -47,12 +49,12 @@ def gtftools_intersect(args):
         if not gBs:
             if args.v or args.all:
                 l = "{}\t{}\t{}".format(gA, ".", ("\t"*9))
-                print >>sys.stdout, l
+                print(l, file=sys.stdout)
         else:
             for i,gB in gBs:
                 if not args.v:
                     l = "{}\t{}\t{}".format(gA, i, gB)
-                    print >> sys.stdout, l
+                    print(l, file=sys.stdout)
 
 def gtftools_tsv(args):
     gtfA = [g for g in read_gtf_file(args.infile) if g.feature == args.feat]
@@ -62,7 +64,7 @@ def gtftools_tsv(args):
 
     cols = [args.key, 'chrom', 'start', 'end', 'strand', 'score', ]
     all_attrs = [a for a in sorted(all_attrs) if a != args.key]
-    print >>sys.stdout, '\t'.join(cols + all_attrs)
+    print('\t'.join(cols + all_attrs), file=sys.stdout)
     for i, gA in enumerate(gtfA):
         r = [
             gA.attr[args.key] if args.key in gA.attr else 'LOC%06d' % (i+1),
@@ -74,7 +76,7 @@ def gtftools_tsv(args):
         ]
         for a in all_attrs:
             r.append(gA.attr[a] if a in gA.attr else '')
-        print >> sys.stdout, '\t'.join(map(str, r))
+        print('\t'.join(map(str, r)), file=sys.stdout)
 
 from Bio.Seq import Seq
 import re
@@ -85,7 +87,7 @@ def gtftools_extract(args):
 
     if args.genome:
         genome_dict = {s.id:s for s in SeqIO.parse(args.genome, 'fasta')}
-        print >>sys.stderr, 'Loading genome complete.'
+        print('Loading genome complete.', file=sys.stderr)
 
     # Create set of selected locus search strings
     selected_loci = set()
@@ -179,10 +181,10 @@ def gtftools_extract(args):
         adjusted.add(misc_g)
 
         # Print
-        print >> args.outfile, '>%s' % adjusted.attr['locus']
-        print >> args.outfile, wraplines(allexons)
+        print('>%s' % adjusted.attr['locus'], file=args.outfile)
+        print(wraplines(allexons), file=args.outfile)
         if args.gtfout:
-            print >>outgtf, adjusted
+            print(adjusted, file=outgtf)
     #
     if args.gtfout:
         outgtf.close()
@@ -193,6 +195,12 @@ def console():
     import argparse
     parser = argparse.ArgumentParser(
         description='''GTF tools'''
+    )
+    parser.add_argument(
+        '-V', '--version',
+        action='version',
+        help='Show the version number and exit.',
+        version=f"telebuilder {__version__}",
     )
     subparsers = parser.add_subparsers()
 

@@ -5,9 +5,9 @@ from collections import defaultdict
 
 from intervaltree import Interval, IntervalTree
 
-from utils import tsv, overlap_length
+from .utils import tsv, overlap_length
 
-from gtfclasses import GTFLine, GTFCluster
+from .gtfclasses import GTFLine, GTFCluster
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
@@ -73,7 +73,7 @@ def region_gtf(giter, regions):
     for r in regions:
         if ':' in r:
             rchrom, t = r.split(':')
-            rs, re = map(int, t.split('-'))
+            rs, re = list(map(int, t.split('-')))
             assert rs <= re
             _regions[rchrom].append((rs,re))
         else: # Only chromosome was given
@@ -120,7 +120,7 @@ def cluster_gtf(gtf, dist=0, stranded=True, criteria=None):
             bychrom[g.chrom].append(g)
     
     ret = []
-    for cchrom, glist in bychrom.iteritems():
+    for cchrom, glist in bychrom.items():
         glist.sort(key=lambda x:x.start)
         cur = GTFCluster(glist[0]) if type(glist[0]) is GTFLine else glist[0]
         for g1 in glist[1:]:
@@ -162,7 +162,7 @@ def conflict_gtf(gtf, dist=0, stranded=False):
             bychrom[g.chrom].append(g)
     
     ret = []
-    for cchrom, glist in bychrom.iteritems():
+    for cchrom, glist in bychrom.items():
         glist.sort(key=lambda x:x.start)
         tmp = [glist[0],]
         for g1 in glist[1:]:
@@ -192,9 +192,9 @@ def write_gtf_file(gtf, outfile, comment=True, span=True):
     outh = open(outfile, 'w') if type(outfile) is str else outfile
     for g in gtf:
         if type(g) is GTFCluster:
-            print >>outh, g.display_str(comment, span)
+            print(g.display_str(comment, span), file=outh)
         else:
-            print >>outh, str(g)
+            print(str(g), file=outh)
     if type(outfile) is str: outh.close()
 
 def read_gtf_file(infile, comment='#'):
@@ -213,7 +213,7 @@ def read_gtf_clusters(infile, group_by=None, comment='#'):
         for g in read_gtf_file(infile, comment):
             assert group_by in g.attr, 'ERROR: All row must contain group_by attribute "%s"' % group_by
             groups[g.attr[group_by]].append(g)
-        groups = groups.values()
+        groups = list(groups.values())
     
     clusters = []
     for grp in groups:

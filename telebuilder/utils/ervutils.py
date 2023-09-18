@@ -2,8 +2,8 @@ import sys
 import os
 from tempfile import NamedTemporaryFile
 
-from igvutils import IGV
-from utils import raw_input_stderr, overlap_length
+from .igvutils import IGV
+from .utils import raw_input_stderr, overlap_length
 
 _QUIET = False
 
@@ -35,7 +35,7 @@ def prompt_cmd():
         curprompt += '***Action to take (? for help, Y to accept): '
         z = raw_input_stderr(curprompt).strip()
         if z == '?':
-            print >>sys.stderr, PROMPT_HELP
+            print(PROMPT_HELP, file=sys.stderr)
         inputcmd = z.strip().split()
         if len(inputcmd) == 1 or len(inputcmd) == 2:
             operation = inputcmd[0]
@@ -246,11 +246,11 @@ class LocusConflict(object):
         if not locA.overlap(locB, stranded=False):
             return ([], [])            # No overlap. Do not change locA or B
         if locB.contains(locA, stranded=False):
-            print >>sys.stderr, 'locB contains locA'
+            print('locB contains locA', file=sys.stderr)
             return ([locA, ], [])      # locA is contained by locB. Remove locA.
         
         if locA.contains(locB, stranded=False):
-            print >>sys.stderr, 'locA contains locB'
+            print('locA contains locB', file=sys.stderr)
             copyA_L = locA.copy()            
             tmpB = locB.span()
             tmpB.end = copyA_L.end + 1
@@ -265,7 +265,7 @@ class LocusConflict(object):
             
             return ([locA, ], [copyA_L, copyA_R, ])
         else:
-            print >>sys.stderr, 'another arrangement'        
+            print('another arrangement', file=sys.stderr)        
             copyA = locA.copy()
             copyA.subtract(locB, stranded=False)
             return ([locA, ], [copyA, ])
@@ -292,15 +292,15 @@ def inspect_conflicts(conflicts, auto, igv, dest=''):
         tmp_gtf = os.path.join(dest, 'tmp.conflict.gtf')
         with open(tmp_gtf, 'w') as outh:
             for lcon in lcons:
-                print >>outh, lcon.igv_gtf()
+                print(lcon.igv_gtf(), file=outh)
         
         igv.load(os.path.abspath(tmp_gtf)).expand()
     
     for i,lcon in enumerate(lcons):
-        print >>sys.stderr, str(lcon)
+        print(str(lcon), file=sys.stderr)
         if igv: igv.goto(lcon.region_str())
         lcon.inspect_auto()
-        print >>sys.stderr, lcon.display_solution_text(auto)
+        print(lcon.display_solution_text(auto), file=sys.stderr)
         
         if auto and lcon.action is not None:
             pass

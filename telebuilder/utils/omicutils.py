@@ -4,9 +4,9 @@ import sys
 import re
 from collections import OrderedDict
 
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
-from utils import tsv
+from .utils import tsv
 
 
 __author__ = 'Matthew L. Bendall'
@@ -26,7 +26,7 @@ class ChromosomeDict(object):
             self.reforder = list(self.reflen.keys())
 
     def __str__(self):
-        return '\n'.join('%s%d' % (k.ljust(30), v) for k,v in self.d.iteritems())
+        return '\n'.join('%s%d' % (k.ljust(30), v) for k,v in self.d.items())
 
 def get_sequence_ucsc(build, region):
     d = {
@@ -36,7 +36,7 @@ def get_sequence_ucsc(build, region):
     }
     url = '%(baseurl)s/%(build)s/dna?segment=%(region)s' % d
 
-    response = urllib2.urlopen(url)
+    response = urllib.request.urlopen(url)
     xml = response.read()
     m = re.search('<DNA length="(\d+)">([a-zA-Z\n]+)</DNA>', xml)
     assert m is not None
@@ -50,7 +50,7 @@ def get_sequence_fasta(seqdict, region):
     py_start = int(region[1]) - 1
     py_end = int(region[2])
     if region[0] not in seqdict:
-        print >>sys.stderr, 'Skipping, sequence %s not loaded' % region[0]
+        print('Skipping, sequence %s not loaded' % region[0], file=sys.stderr)
         return None
     seq = str(seqdict[region[0]][py_start : py_end].seq)
     assert len(seq) == region[2]-region[1]+1, 'Calculated length (%d) != reported length (%d)' % (len(seq), region[2]-region[1]+1)

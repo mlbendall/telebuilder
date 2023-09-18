@@ -6,12 +6,14 @@ import sys
 import gzip
 from glob import glob
 
-from utils.utils import tsv
-from utils.omicutils import ChromosomeDict
-from utils import rmskutils
-from utils import gtfutils
+from .utils.utils import tsv
+from .utils.omicutils import ChromosomeDict
+from .utils import rmskutils
+from .utils import gtfutils
 from collections import defaultdict, Counter
-from utils.gtfclasses import GTFCluster
+from .utils.gtfclasses import GTFCluster
+
+from . import __version__
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
@@ -21,7 +23,7 @@ def flanking_ltr_distribution(args, ltr_files):
     if os.path.exists(args.chrom_sizes):
         cdict = ChromosomeDict(args.chrom_sizes)
     else:
-        print >>sys.stderr, '[WARNING] Chromosome sizes were not found'
+        print('[WARNING] Chromosome sizes were not found', file=sys.stderr)
         cdict = ChromosomeDict()
 
     # Read and filter by chromosome
@@ -37,7 +39,7 @@ def flanking_ltr_distribution(args, ltr_files):
         iclusters.append(newclust)
 
     locids = [c.attr['locus'] for c in iclusters]
-    print >> sys.stderr, "[VERBOSE] Loaded %d internal clusters" % len(locids)
+    print("[VERBOSE] Loaded %d internal clusters" % len(locids), file=sys.stderr)
 
     # Create flanking annotations
     flanks = []
@@ -49,17 +51,17 @@ def flanking_ltr_distribution(args, ltr_files):
         if left.length():
             flanks.append(left)
         else:
-            print left
+            print(left)
         if right.length():
             flanks.append(right)
         else:
-            print right
+            print(right)
 
     gtfBs = []
     for f in ltr_files:
         assert os.path.exists(f)
         gtfBs.append(list(gtfutils.read_gtf_file(gzip.open(f, 'rb'))))
-    print >> sys.stderr, "[VERBOSE] Loaded %d LTR records from %d files." % (sum(len(_) for _ in gtfBs), len(gtfBs))
+    print("[VERBOSE] Loaded %d LTR records from %d files." % (sum(len(_) for _ in gtfBs), len(gtfBs)), file=sys.stderr)
 
     # Intersect
     isect = gtfutils.intersect_gtf(flanks, gtfBs)
@@ -91,24 +93,24 @@ def flanking_ltr_distribution(args, ltr_files):
 
     MAXPRINT = 20
 
-    print >> sys.stderr, 'Total number of flanking hits by model:'
-    print >> sys.stderr, '\n'.join(
+    print('Total number of flanking hits by model:', file=sys.stderr)
+    print('\n'.join(
         ['\t%s%d' % (k.ljust(16), v) for k, v in totalhits.most_common() if
-         v > 1][:MAXPRINT])
+         v > 1][:MAXPRINT]), file=sys.stderr)
 
-    print >> sys.stderr, 'Number of loci with hits on both sides:'
-    print >> sys.stderr, '\n'.join(
+    print('Number of loci with hits on both sides:', file=sys.stderr)
+    print('\n'.join(
         ['\t%s%d' % (k.ljust(16), v) for k, v in twosided.most_common() if
-         v > 1][:MAXPRINT])
+         v > 1][:MAXPRINT]), file=sys.stderr)
 
-    print >> sys.stderr, 'Number of loci with hit on one side, but not both:'
-    print >> sys.stderr, '\n'.join(
+    print('Number of loci with hit on one side, but not both:', file=sys.stderr)
+    print('\n'.join(
         ['\t%s%d' % (k.ljust(16), v) for k, v in onesided.most_common() if
-         v > 1][:MAXPRINT])
+         v > 1][:MAXPRINT]), file=sys.stderr)
 
     consider = [m for m, v in totalhits.most_common() if v > 1][:MAXPRINT]
     for i, m in enumerate(consider):
-        print >> sys.stderr, 'Using LTRs:\n\t%s' % '+'.join(consider[:(i + 1)])
+        print('Using LTRs:\n\t%s' % '+'.join(consider[:(i + 1)]), file=sys.stderr)
         chosen = set(consider[:(i + 1)])
         nlocboth = nlocone = nlocnone = 0
         for locid in locids:
@@ -124,12 +126,12 @@ def flanking_ltr_distribution(args, ltr_files):
                 else:
                     nlocnone += 1
 
-        print >> sys.stderr, '\t\t%d have both, %d have one, and %d have none' % (
-        nlocboth, nlocone, nlocnone)
+        print('\t\t%d have both, %d have one, and %d have none' % (
+        nlocboth, nlocone, nlocnone), file=sys.stderr)
         pcts = [100 * float(_) / len(locids) for _ in
                 (nlocboth, nlocone, nlocnone)]
-        print >> sys.stderr, '\t\t(%.1f have both, %.1f have one, and %.1f have none)' % tuple(
-            pcts)
+        print('\t\t(%.1f have both, %.1f have one, and %.1f have none)' % tuple(
+            pcts), file=sys.stderr)
 
 
 def download_ltr(args):
@@ -142,7 +144,7 @@ def download_ltr(args):
     if os.path.exists(args.chrom_sizes):
         cdict = ChromosomeDict(args.chrom_sizes)
     else:
-        print >>sys.stderr, '[WARNING] Chromosome sizes were not found'
+        print('[WARNING] Chromosome sizes were not found', file=sys.stderr)
         cdict = ChromosomeDict()
 
     if args.filter_chrom:
@@ -166,12 +168,12 @@ def download_ltr(args):
         else:
             response = rmskutils.ucsc_download(args.genome_build, LTRQUERY % chrom)
             if response:
-                print >>sys.stderr, '[VERBOSE] Downloaded %d rows for %s' % (len(response.strip('\n').split('\n')), chrom)
+                print('[VERBOSE] Downloaded %d rows for %s' % (len(response.strip('\n').split('\n')), chrom), file=sys.stderr)
                 with gzip.open(rmskfile, 'wb') as outh:
-                    print >>outh, response.strip('\n')
+                    print(response.strip('\n'), file=outh)
                 rmskfiles.append(rmskfile)
             else:
-                print >>sys.stderr, '[VERBOSE] No rows for %s' % chrom
+                print('[VERBOSE] No rows for %s' % chrom, file=sys.stderr)
 
     # Convert to GTF
     gtffiles = []
@@ -182,7 +184,7 @@ def download_ltr(args):
             gtffiles.append(gf)
         else:
             rows = tsv(gzip.open(rf, 'rb'))
-            header = rows.next()
+            header = next(rows)
             gtf = []
             for r in rows:
                 g = rmskutils.RMSKLine(r).to_gtf()
@@ -191,13 +193,13 @@ def download_ltr(args):
             gtf.sort(key=lambda x:x.start)
             with gzip.open(gf, 'wb') as outh:
                 gtfutils.write_gtf_file(gtf, outh)
-            print >> sys.stderr, "[VERBOSE] Wrote %d rows to %s" % (len(gtf), gf)
+            print("[VERBOSE] Wrote %d rows to %s" % (len(gtf), gf), file=sys.stderr)
             gtffiles.append(gf)
 
     return gtffiles
 
 
-from utils import _get_build_from_file
+from .utils import _get_build_from_file
 
 
 def console():
@@ -206,6 +208,12 @@ def console():
         description='''Examine the distribution of various LTR models that flank internal
                        regions''',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        '-V', '--version',
+        action='version',
+        help='Show the version number and exit.',
+        version=f"telebuilder {__version__}",
     )
     parser.add_argument('--genome_build', default=_get_build_from_file(),
                         help='''Genome build to use, i.e. hg19, hg38.

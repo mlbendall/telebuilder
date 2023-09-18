@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
-from utils import numstr, tsv
-from gtfutils import GTFLine
+from .utils import numstr, tsv
+from .gtfutils import GTFLine
 
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
