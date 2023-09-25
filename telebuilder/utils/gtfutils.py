@@ -52,7 +52,8 @@ def sort_gtf(giter, chrom_order=None):
         ret.sort(key=lambda x:x.chrom)
     else:
         c_d = {k:i for i,k in enumerate(chrom_order)}
-        ret.sort(key=lambda x:c_d[x.chrom] if x.chrom in c_d else x.chrom)
+        ret = [row for row in ret if row.chrom in c_d]
+        ret.sort(key=lambda row: c_d[row.chrom])
     return ret
 
 

@@ -71,7 +71,7 @@ def fileopen(fun):
     def wrapper(*args, **kwargs):
         if isinstance(args[0], str):
             try:
-                fh = open(args[0], 'rU')
+                fh = open(args[0], 'r')
                 return fun(fh, *args[1:], **kwargs)
             except IOError as e:
                 raise e
@@ -158,6 +158,7 @@ def raw_input_stderr(*args):
     sys.stdout = sys.stderr
     x = input(*args)
     sys.stdout = sys.__stdout__
+    print(x)
     return x    
 
 

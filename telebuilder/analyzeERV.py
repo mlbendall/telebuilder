@@ -168,9 +168,10 @@ def download_ltr(args):
         else:
             response = rmskutils.ucsc_download(args.genome_build, LTRQUERY % chrom)
             if response:
-                print('[VERBOSE] Downloaded %d rows for %s' % (len(response.strip('\n').split('\n')), chrom), file=sys.stderr)
+                _nrows = len(response.strip(b'\n').split(b'\n'))
+                print(f'[VERBOSE] Downloaded {_nrows} rows for {chrom}', file=sys.stderr)
                 with gzip.open(rmskfile, 'wb') as outh:
-                    print(response.strip('\n'), file=outh)
+                    outh.write(response)
                 rmskfiles.append(rmskfile)
             else:
                 print('[VERBOSE] No rows for %s' % chrom, file=sys.stderr)
@@ -183,7 +184,7 @@ def download_ltr(args):
             # print >> sys.stderr, "[VERBOSE] Found existing: %s" % gf
             gtffiles.append(gf)
         else:
-            rows = tsv(gzip.open(rf, 'rb'))
+            rows = tsv(gzip.open(rf, 'rt',  encoding='utf-8'))
             header = next(rows)
             gtf = []
             for r in rows:

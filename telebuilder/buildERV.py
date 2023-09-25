@@ -7,6 +7,7 @@ import string
 from glob import glob
 from collections import defaultdict, Counter
 from itertools import chain
+import atexit
 
 from .utils import rmskutils
 from .utils import ervutils
@@ -216,7 +217,11 @@ def stage8(mclusters, cytogtf, fam, logh=sys.stderr):
         for g, bands in isect:
             chrom = g.chrom[3:] if g.chrom[:3] == 'chr' else g.chrom
             if bands:
-                band = bands[0][1].attr['gene_id']
+                if len(bands) > 1:
+                    _bands = sort_gtf([_[1] for _ in bands])
+                    band = _bands[0].attr['gene_id']
+                else:
+                    band = bands[-1][1].attr['gene_id']
             else:
                 band = ''
             byband[(chrom, band)].append(g)
@@ -275,6 +280,7 @@ def main(args):
         snapshot_final = False
     else:
         print("[VERBOSE] Using IGV.", file=logh)
+        atexit.register(igv.close)
         if args.compare_gtfs and os.path.isdir(args.compare_gtfs):
             other_gtfs = glob(os.path.join(args.compare_gtfs, '*.gtf'))
             other_gtfs += glob(os.path.join(args.compare_gtfs, '*.gtf.gz'))
@@ -379,7 +385,8 @@ def main(args):
         write_gtf_file(final_gtf, outh)
 
     if igv:
-        igv.load(os.path.abspath(final_gtf_file)).expand()
+        igv.load(os.path.abspath(final_gtf_file))
+        igv.collapse().expand(f'{args.fam}.gtf')
 
     # Review conflicts and display or snapshot
     if len(lcons) == 0:

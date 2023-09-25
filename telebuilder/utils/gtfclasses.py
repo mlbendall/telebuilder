@@ -44,8 +44,8 @@ class GTFLine(object):
     def _fmt_attrs(self):
         if not self.attr:
             return '.'
-        keyorder = sorted(list(self.attr.keys()), key=lambda x:
-        self.ATTRORDER.index(x) if x in self.ATTRORDER else x)
+        keyorder = [k for k in self.ATTRORDER if k in self.attr]
+        keyorder += sorted(k for k in self.attr.keys() if k not in self.ATTRORDER)
         ret = ['%s "%s";' % (k, self.attr[k]) for k in keyorder]
         return ' '.join(ret)
 

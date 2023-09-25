@@ -23,7 +23,7 @@ PROMPT_HELP = '''Options are:
 
 RESOLVE_ACTIONS = ['ignore','reject','diff','merge','y']
 
-def prompt_cmd():
+def prompt_cmd(can_accept = True):
     ''' Get command from user input '''
     operation = 'begin'
     while operation.lower() not in RESOLVE_ACTIONS:
@@ -32,7 +32,10 @@ def prompt_cmd():
             curprompt += 'INPUT IS INVALID'.ljust(20)
         else:
             curprompt += ' '.ljust(20)
-        curprompt += '***Action to take (? for help, Y to accept): '
+        if can_accept:
+            curprompt += '***Action to take (? for help, Y to accept): '
+        else:
+            curprompt += '***Action to take (REQUIRED, ? for help): '
         z = raw_input_stderr(curprompt).strip()
         if z == '?':
             print(PROMPT_HELP, file=sys.stderr)
@@ -180,7 +183,7 @@ class LocusConflict(object):
     def update_action(self, input):
         if input[0] in 'Yy':
             if self.action is None: # There was no auto assignment
-                return self.update_action(prompt_cmd())
+                return self.update_action(prompt_cmd(can_accept = False))
             return
 
         assert input[0] in RESOLVE_ACTIONS, 'ERROR: unknown input: %s' % str(input)
@@ -294,17 +297,19 @@ def inspect_conflicts(conflicts, auto, igv, dest=''):
             for lcon in lcons:
                 print(lcon.igv_gtf(), file=outh)
         
-        igv.load(os.path.abspath(tmp_gtf)).expand()
+        igv.load(os.path.abspath(tmp_gtf))
+        igv.collapse().expand('tmp.conflict.gtf')
     
     for i,lcon in enumerate(lcons):
         print(str(lcon), file=sys.stderr)
         if igv: igv.goto(lcon.region_str())
         lcon.inspect_auto()
         print(lcon.display_solution_text(auto), file=sys.stderr)
-        
-        if auto and lcon.action is not None:
-            pass
-        else:
+
+        if not auto:
             lcon.update_action(prompt_cmd())
-    
+        else:
+            if lcon.action is None:
+                lcon.update_action(prompt_cmd(can_accept=False))
+
     return lcons
