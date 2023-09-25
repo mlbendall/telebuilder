@@ -7,7 +7,8 @@ from .utils import raw_input_stderr, overlap_length
 
 _QUIET = False
 
-
+__author__ = 'Matthew L. Bendall'
+__copyright__ = "Copyright (C) 2023 Matthew L. Bendall"
 
 PROMPT_HELP = '''Options are:
     ignore                     - Ignore conflict. Annotation is unchanged.

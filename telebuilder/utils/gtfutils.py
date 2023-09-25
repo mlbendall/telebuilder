@@ -10,7 +10,7 @@ from .utils import tsv, overlap_length
 from .gtfclasses import GTFLine, GTFCluster
 
 __author__ = 'Matthew L. Bendall'
-__copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
+__copyright__ = "Copyright (C) 2023 Matthew L. Bendall"
 
 
 def subtract_gtflines(gA, gB):

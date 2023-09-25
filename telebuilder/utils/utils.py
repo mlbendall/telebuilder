@@ -8,7 +8,7 @@ import re
 from itertools import groupby
 
 __author__ = 'Matthew L. Bendall'
-__copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
+__copyright__ = "Copyright (C) 2023 Matthew L. Bendall"
 
 def numstr(x):
     """ Convert argument to numeric type.

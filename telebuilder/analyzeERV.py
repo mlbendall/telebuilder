@@ -16,7 +16,7 @@ from .utils.gtfclasses import GTFCluster
 from . import __version__
 
 __author__ = 'Matthew L. Bendall'
-__copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
+__copyright__ = "Copyright (C) 2023 Matthew L. Bendall"
 
 def flanking_ltr_distribution(args, ltr_files):
     # Load chromosome sizes

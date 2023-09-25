@@ -5,7 +5,7 @@ from .utils import numstr, attrstr, overlap_length
 from . import gtfutils
 
 __author__ = 'Matthew L. Bendall'
-__copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
+__copyright__ = "Copyright (C) 2023 Matthew L. Bendall"
 
 
 class GTFLine(object):
