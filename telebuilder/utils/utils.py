@@ -2,6 +2,8 @@
 """ Utility Functions
 
 """
+from typing import Union, Optional
+
 import sys
 import os
 import re
@@ -10,7 +12,7 @@ from itertools import groupby
 __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2023 Matthew L. Bendall"
 
-def numstr(x):
+def numstr(x: str) -> Union[int, float, None]:
     """ Convert argument to numeric type.
 
     Attempts to convert argument to an integer. If this fails, attempts to
@@ -52,6 +54,16 @@ def attrstr(x):
     for t in re.findall('(\S+)\s+"([\s\S]*?)";', x):
         ret[t[0]] = numstr(t[1])
     return ret
+
+def nonedot(v: Union[str, None]) -> str:
+    """ Return a dot if v is None"""
+    return '.' if v is None else v
+
+def dotnone(s: str) -> Union[str, None]:
+    """ Return None if v is a dot """
+    return None if s.strip() == '.' else s
+
+
 
 def fileopen(fun):
     """ Open read-only filehandle if first argument is string

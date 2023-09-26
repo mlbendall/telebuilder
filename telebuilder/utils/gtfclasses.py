@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from .utils import numstr, attrstr, overlap_length
+from typing import Union, Optional
+from .utils import numstr, attrstr, nonedot, dotnone, overlap_length
 
 from . import gtfutils
 
@@ -9,6 +10,16 @@ __copyright__ = "Copyright (C) 2023 Matthew L. Bendall"
 
 
 class GTFLine(object):
+    chrom: Optional[str]
+    source: Optional[str]
+    feature: Optional[str]
+    start: int
+    end: int
+    score: Optional[int]
+    strand: Optional[str]
+    frame: Optional[int]
+    attr: dict
+
     COLS = [
         ('chrom', str, '.'),
         ('source', str, '.'),
@@ -23,17 +34,38 @@ class GTFLine(object):
     # Attributes that should be at the front of attribute string
     ATTRORDER = ['gene_id', 'transcript_id', 'locus', 'repName']
 
-    def __init__(self, val=None):
+    def __init__(self, val: Union['GTFLine', list[str], None] = None):
         if val is None:
-            for (n, t, d) in self.COLS:
-                setattr(self, n, d)
+            self.chrom = None
+            self.source = None
+            self.feature = None
+            self.start = -1
+            self.end = -1
+            self.score = None
+            self.strand = None
+            self.frame = None
             self.attr = {}
         elif type(val) is list:
-            for (n, t, d), v in zip(self.COLS, val):
-                setattr(self, n, t(v))
+            self.chrom = dotnone(val[0])
+            self.source = dotnone(val[1])
+            self.feature = dotnone(val[2])
+            self.start = int(val[3])
+            self.end = int(val[4])
+            self.score = numstr(val[5])
+            self.strand = dotnone(val[6])
+            self.frame = dotnone(val[7])
+            self.attr = attrstr(val[8])
         elif type(val) is GTFLine:
-            for (n, t, d) in self.COLS:
-                setattr(self, n, getattr(val, n))
+            self.chrom = val.chrom
+            self.source = val.source
+            self.feature = val.feature
+            self.start = val.start
+            self.end = val.end
+            self.score = val.score
+            self.strand = val.strand
+            self.frame = val.frame
+            self.attr = {k:v for k,v in val.attr.items()}
+        return
 
     def copy(self):
         return GTFLine(self.fmt())
@@ -50,8 +82,17 @@ class GTFLine(object):
         return ' '.join(ret)
 
     def fmt(self):
-        ret = [str(getattr(self, n)) for (n, t, d) in self.COLS[:8]]
-        return ret + [self._fmt_attrs()]
+        return [
+            nonedot(self.chrom),
+            nonedot(self.source),
+            nonedot(self.feature),
+            str(self.start),
+            str(self.end),
+            nonedot(self.score),
+            nonedot(self.strand),
+            nonedot(self.frame),
+            self._fmt_attrs(),
+        ]
 
     def sequence(self, gdict):
         if self.strand == '+':
