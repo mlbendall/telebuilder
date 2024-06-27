@@ -211,7 +211,7 @@ def console():
                         help='''File with chromosome sizes and order. Default
                                 is "chrom.sizes" (in working directory).''')
     parser_sort.add_argument('infile',
-                             nargs='?', type=argparse.FileType('rU'),
+                             nargs='?', type=argparse.FileType('r'),
                              default=sys.stdin,
                              help="Input GTF file. Default: stdin.")
     parser_sort.add_argument('outfile',
@@ -227,7 +227,7 @@ def console():
                         help='''File with chromosome sizes and order. Default
                                 is "chrom.sizes" (in working directory).''')
     parser_sortclust.add_argument('infile',
-                             nargs='?', type=argparse.FileType('rU'),
+                             nargs='?', type=argparse.FileType('r'),
                              default=sys.stdin,
                              help="Input GTF file. Default: stdin.")
     parser_sortclust.add_argument('outfile',
@@ -266,7 +266,7 @@ def console():
                             help='''Key used for record ID. Default is
                                     "locus".''')
     parser_tsv.add_argument('infile',
-                             nargs='?', type=argparse.FileType('rU'),
+                             nargs='?', type=argparse.FileType('r'),
                              default=sys.stdin,
                              help="Input GTF file. Default: stdin.")
     parser_tsv.add_argument('outfile',
@@ -311,13 +311,13 @@ def console():
                                         specified by providing this argument
                                         multiple times.''')
     parser_extract.add_argument('--locus_file',
-                                type=argparse.FileType('rU'),
+                                type=argparse.FileType('r'),
                                 help='''File containing locus names to be
                                         extracted, one per line.''')
     parser_extract.add_argument('--gtfout',
                                 help='Output GTF file (optional).')
     parser_extract.add_argument('infile',
-                                nargs='?', type=argparse.FileType('rU'),
+                                nargs='?', type=argparse.FileType('r'),
                                 default=sys.stdin,
                                 help="Input GTF file. Default: stdin.")
     parser_extract.add_argument('outfile',

@@ -57,7 +57,7 @@ def attrstr(x):
 
 def nonedot(v: Union[str, None]) -> str:
     """ Return a dot if v is None"""
-    return '.' if v is None else v
+    return '.' if v is None else str(v)
 
 def dotnone(s: str) -> Union[str, None]:
     """ Return None if v is a dot """
