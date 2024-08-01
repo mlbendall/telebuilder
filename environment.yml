@@ -1,0 +1,12 @@
+name: telebuilder
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - biopython
+  - intervaltree
+  - pip
+  - pip:
+      - git+https://github.com/mlbendall/telebuilder.git@main#egg=telebuilder
