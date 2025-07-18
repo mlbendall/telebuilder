@@ -7,6 +7,8 @@ dependencies:
   - python
   - biopython
   - intervaltree
+  - mysql-client
+  - git-lfs
   - pip
   - pip:
       - git+https://github.com/mlbendall/telebuilder.git@main#egg=telebuilder
