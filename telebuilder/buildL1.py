@@ -4,7 +4,11 @@
 import sys
 import os
 import re
-import string
+try:
+    from string import letters as LETTERS
+except ImportError:
+    from string import ascii_letters as LETTERS
+
 from glob import glob
 from collections import defaultdict
 
@@ -20,7 +24,7 @@ __author__ = 'Matthew L. Bendall'
 __copyright__ = "Copyright (C) 2017 Matthew L. Bendall"
 
 # Alphabet suffixes
-SUFFIXES = list(string.letters[:26])
+SUFFIXES = list(LETTERS[:26])
 # In case there are more than 26:
 SUFFIXES += [a+b for b in SUFFIXES for a in SUFFIXES]
 

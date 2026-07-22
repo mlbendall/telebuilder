@@ -51,7 +51,7 @@ def attrstr(x):
     if type(x) is dict:
         return x
     ret = {}
-    for t in re.findall('(\S+)\s+"([\s\S]*?)";', x):
+    for t in re.findall(r'(\S+)\s+"([\s\S]*?)";', x):
         ret[t[0]] = numstr(t[1])
     return ret
 
